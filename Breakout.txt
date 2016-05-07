@@ -1,0 +1,352 @@
+/*
+ * File: Breakout.java
+ * -------------------
+ * Name: James Hilton
+ * 
+ * 
+ * This file implements the game of Breakout.  On mouse click the game starts.  The
+ * mouse is used to drag the paddle from left to right at the bottom of the screen. The
+ * user gets three tries to "breakout" before the game quits.   
+ */
+
+import acm.graphics.*;
+import acm.program.*;
+import acm.util.*;
+
+import java.applet.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class Breakout extends GraphicsProgram {
+
+	/** Width and height of application window in pixels */
+	public static final int APPLICATION_WIDTH = 400;
+	public static final int APPLICATION_HEIGHT = 600;
+
+	/** Dimensions of game board (usually the same) */
+	private static final int WIDTH = APPLICATION_WIDTH;
+	private static final int HEIGHT = APPLICATION_HEIGHT;
+
+	/** Dimensions of the paddle */
+	private static final int PADDLE_WIDTH = 60;
+	private static final int PADDLE_HEIGHT = 10;
+
+	/** Offset of the paddle up from the bottom */
+	private static final int PADDLE_Y_OFFSET = 30;
+
+	/** Number of bricks per row */
+	private static final int NBRICKS_PER_ROW = 10;
+
+	/** Number of rows of bricks */
+	private static final int NBRICK_ROWS = 10;
+
+	/** Separation between bricks */
+	private static final int BRICK_SEP = 4;
+
+	/** Width of a brick */
+	private static final int BRICK_WIDTH =
+	(WIDTH - (NBRICKS_PER_ROW - 1) * BRICK_SEP) / NBRICKS_PER_ROW;
+
+	/** Height of a brick */
+	private static final int BRICK_HEIGHT = 8;
+
+	/** Radius of the ball in pixels */
+	private static final int BALL_RADIUS = 5;
+
+	/** Offset of the top brick row from the top */
+	private static final int BRICK_Y_OFFSET = 70;
+
+	/** Number of turns */
+	private static final int NTURNS = 3;
+	
+	/** Time frame delay in milliseconds */
+	private static final int DELAY = 10;
+
+
+	
+	public void run() {
+		int turnsRemaining = NTURNS;
+				while (true) {
+				if (turnsRemaining > 0 && count != 1) {
+					setup(); 
+					welcomeMessage();
+					waitForClick();
+					remove(welcome);
+				}
+				if (turnsRemaining ==0 && count != 1) {
+						endGameLoser();
+						break;
+				}
+				if (count == 1) {
+					endGameWinner();
+					break;
+				}
+				while (true) {
+					moveBall();
+					checkForCollision();
+					pause(DELAY); 
+					if (ball.getY() > HEIGHT -(2 * BALL_RADIUS)) {
+						turnsRemaining --;
+						removeAll();
+						break;
+					}
+					if (count == 1) {
+						endGameWinner();
+						break;
+					}
+					
+				}
+			}
+		}
+		
+		
+	
+	
+	public void init() {
+		addMouseListeners(); 
+	}
+	
+	// This method calls the methods that create the paddle, ball and bricks.  
+	
+	private void setup() {
+		createPaddle();
+		createBall();
+		createBricks();
+		
+	}
+	
+	// This method creates 10 rows of 10 bricks each.  The first two rows are red,
+	// the second two are orange, the next two are yellow, '' green, '' cyan.  
+	// The spacing, from the top, left, and right is defined by static variables. 
+	
+	
+	private void createBricks() {
+		count = 1; 
+	
+		for (int row = 1; row < NBRICK_ROWS + 1; row++) {
+			
+			for (int brickNum = 1;  brickNum < NBRICKS_PER_ROW + 1; brickNum++) { 
+				
+			int startingX = (WIDTH -(BRICK_SEP * (NBRICKS_PER_ROW - 1) + (BRICK_WIDTH * NBRICKS_PER_ROW)))/2 ;
+			
+			int x = startingX + (brickNum - 1) * BRICK_SEP + (brickNum - 1) * BRICK_WIDTH;
+				
+			int y = BRICK_Y_OFFSET + ((row - 1) * BRICK_SEP) + ((row - 1) * BRICK_HEIGHT);
+				
+			rect = new GRect (x, y, BRICK_WIDTH, BRICK_HEIGHT); 
+			rect.setFilled(true); 
+			add (rect); 
+			rect.sendToBack();
+			count++;	
+				if (count <= 21) { 
+				
+					rect.setColor(Color.red);
+					
+				} else if (count > 21 && count <= 41) {
+				
+					rect.setColor(Color.orange);
+					
+				} else if (count > 41 && count <= 61) {
+				
+					rect.setColor(Color.yellow);
+					
+				} else if (count > 61 && count <= 81) {
+				
+					rect.setColor(Color.green);
+					
+				} else {
+					
+					rect.setColor(Color.cyan);
+				}
+			}
+		}	
+	}			
+  	
+	// Created a paddle of length and with defined as private variable above and places it 
+	// above the baseline a distance that is also defined above. 
+	
+	private void createPaddle() {
+		int x = (WIDTH-PADDLE_WIDTH)/2; 
+		int y = APPLICATION_HEIGHT-PADDLE_Y_OFFSET;	
+		paddle = new GRect (x, y, PADDLE_WIDTH, PADDLE_HEIGHT);  
+		paddle.setFilled(true);
+		paddle.setColor(Color.black);
+		add (paddle);
+	}
+	
+	// Creates a ball of sizes defined as private variables above and centers it in 
+	// the center of the window.  
+	
+	
+	private void createBall() {
+		int x = (WIDTH - BALL_RADIUS)/2;
+		int y = (HEIGHT - BALL_RADIUS)/2;
+		ball = new GOval (x, y, 2 * BALL_RADIUS, 2* BALL_RADIUS);
+		ball.setFilled(true); 
+		ball.setColor(Color.black);
+		add(ball);
+	}
+	
+	
+	// The welcome message tells the user to click the screen to begin the program.  
+	
+	
+	private void welcomeMessage() {
+		welcome = new GLabel("Click to Start!");
+		double x = (WIDTH/2)- (welcome.getWidth()/2)-25;
+		double y = (HEIGHT - welcome.getAscent())* 2/3;
+		Font tr = new Font ("Helvetica",Font.BOLD, 20);
+		welcome.setLocation(x,y);
+		welcome.setFont(tr);
+		welcome.setColor(Color.RED);
+		add(welcome);
+	}
+	
+	// Creates a mouse event that takes the x distance that the mouse moved and passes
+	// it to the paddle.move method that moves the paddle object.  This method also 
+	// inures that the paddle cannot move outside of the bounds of the screen.  
+	
+	public void mouseDragged(MouseEvent e) {
+		paddle.move(e.getX() - Last.getX(), 0 );
+		Last = new GPoint(e.getPoint());
+		if (paddle.getX() > (WIDTH - PADDLE_WIDTH)) {
+			paddle.setLocation(WIDTH-PADDLE_WIDTH, APPLICATION_HEIGHT-PADDLE_Y_OFFSET);
+		}
+		if (paddle.getX() < 0) {
+			paddle.setLocation(0,APPLICATION_HEIGHT-PADDLE_Y_OFFSET);
+		}
+	}
+	
+	// Creates a mouse event that on mouse pressed returns the location of where
+	// the event occurred.  
+	
+	public void mousePressed(MouseEvent e) {
+		Last = new GPoint(e.getPoint());
+	}
+		
+		
+		
+	// This method controls the movement of the ball.  If the x position of the ball 
+	// would be larger than the width of the screen, we take the inverse of the x velocity.
+	// If the y position of the ball would be less than 
+	
+	private void moveBall() {
+		ball.move(vx, vy);
+		if (ball.getX() > (WIDTH -(2 * BALL_RADIUS)) || ball.getX() < 0) { 
+			vx = -vx;
+		}
+		if (ball.getY() < 0) { 
+			vy = -vy;
+		}
+	}
+	
+	// This method checks for the (x,y) coordinates of an object that is encountered by 
+	// the ball. To test whether the ball has encountered an object, rather than testing
+	// the entire circumference of the ball, we test the four corners 
+	// of a square of height and width 2 * r.  This is a simplification, but works 
+	// reasonably well.  
+		
+	private void checkForCollision() {
+		if (getElementAt(ball.getX(), ball.getY()) != null)  {
+			collider = getElementAt(ball.getX(), ball.getY());
+		} else if (getElementAt(ball.getX() + 2 * BALL_RADIUS, ball.getY()) != null) {
+				collider = (getElementAt(ball.getX() + 2 * BALL_RADIUS, ball.getY()));
+			} else if (getElementAt(ball.getX() + 2 * BALL_RADIUS, ball.getY() + 2 *BALL_RADIUS) != null) {
+				collider = getElementAt(ball.getX() + 2 * BALL_RADIUS, ball.getY() + 2 *BALL_RADIUS);
+				} else { collider = getElementAt(ball.getX(), ball.getY() +  2 * BALL_RADIUS);
+			}
+		getCollidingObject(); 
+	}
+	
+	// This method takes the named object that the ball encounters and asks takes an 
+	// action based on the type of object. If the object the ball encounters is a paddle
+	// then inverse of the y velocity is passed to the ball.  If the object the ball 
+	// encounters is not null or the paddle (it must therefore be a brick) a remove methdod
+	// is called that takes away the object from the canvas and reduces the counter by 1. 
+	
+	
+	private void getCollidingObject() {
+		if (collider == paddle) { 
+			vy = -vy;
+		}
+		if (collider != paddle && collider != null) {
+			remove(collider);
+			count --;
+			vy = -vy;
+		}
+	}
+	
+	
+	// If the user removes all of the bricks from the canvas before the third turn,
+	// the user receives a message that tells him/her that he/she has won.  All
+	// objects are removed from the canvas and a winner message is showed to the user. 
+	
+	private void endGameWinner() {
+		removeAll();
+		ending = new GLabel("You Won!");
+		double x = (WIDTH/2)- (welcome.getWidth()/2);
+		double y = (HEIGHT - welcome.getAscent())* 2/3;
+		Font tr = new Font ("Helvetica",Font.BOLD, 20);
+		ending.setLocation(x,y);
+		ending.setFont(tr);
+		ending.setColor(Color.RED);
+		setBackground(Color.BLACK);
+		add(ending);
+	}
+	
+	
+	// This method is the ending screen for when a user has lost the game after playing
+	// all three turns.  It removes all objects from the canvas and places a GLabel
+	// that tells the user that game has ended.  
+	
+	private void endGameLoser() {
+		removeAll();
+		endingLoser = new GLabel("Game Over!");
+		double x = (WIDTH/2)- (endingLoser.getWidth()/2);
+		double y = (HEIGHT - endingLoser.getAscent())* 2/3;
+		Font tr = new Font ("Helvetica",Font.BOLD, 20);
+		endingLoser.setLocation(x,y);
+		endingLoser.setFont(tr);
+		endingLoser.setColor(Color.RED);
+		setBackground(Color.BLACK);
+		add(endingLoser);
+	}
+	
+	
+		
+		
+	
+	
+	// Private Object Variables are contained here. The count variable needed to be used
+	// outside of a single method and so it was first declared here.
+	
+	
+	private GRect paddle;
+	private GPoint Last;
+	private GOval ball;
+	private GObject collider; 
+	private GRect rect;
+	private int count;
+	private GLabel welcome;
+	private GLabel ending;
+	private GLabel endingLoser;
+	
+	
+	
+	
+	// Starting up a variable that contains the random generator.  
+	
+	private RandomGenerator rgen = RandomGenerator.getInstance();
+	
+	
+	// The velocity in the x and y directions.   Y velocity is initially 3 and x is random.
+	// Half of the time the value of vx will randomly set as negative.  
+	
+	private double vx = rgen.nextDouble(1.0, 3.0);
+	private double vy = 3.0; 
+	
+	
+
+	
+}
+	
